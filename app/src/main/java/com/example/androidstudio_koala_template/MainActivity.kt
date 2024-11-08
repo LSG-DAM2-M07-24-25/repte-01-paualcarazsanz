@@ -3,12 +3,11 @@ package com.example.androidstudio_koala_template
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
@@ -22,13 +21,26 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             AndroidStudioKoalaTemplateTheme {
+                var selectedIcon by remember { mutableStateOf("Add") } // Estado para almacenar el ícono seleccionado
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                     Column(modifier = Modifier.padding(innerPadding)) {
+                        // Parte superior: Título, Dropdown y Slider
                         Title()
                         Spacer(modifier = Modifier.height(8.dp))
-                        MyDropDownMenu(modifier = Modifier.padding(horizontal = 16.dp))
+
+                        // Pasamos la función onIconSelected que actualiza el estado de selectedIcon
+                        MyDropDownMenu(modifier = Modifier.padding(horizontal = 16.dp), onIconSelected = { icon ->
+                            selectedIcon = icon
+                        })
+
                         Spacer(modifier = Modifier.height(32.dp))
                         RatingSlider()
+
+                        // Espacio para empujar la parte inferior hacia abajo
+                        Spacer(modifier = Modifier.weight(1f))
+
+                        // Parte inferior: Botón y Badge Icon
+                        BottomSection(selectedIcon = selectedIcon)
                     }
                 }
             }
@@ -48,8 +60,8 @@ fun Title() {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MyDropDownMenu(modifier: Modifier = Modifier) {
-    var selectedText: String by remember { mutableStateOf("") }
+fun MyDropDownMenu(modifier: Modifier = Modifier, onIconSelected: (String) -> Unit) {
+    var selectedText: String by remember { mutableStateOf("Add") } // Inicializa con un valor predeterminado
     var expanded: Boolean by remember { mutableStateOf(false) }
     val iconsMap = mapOf(
         "Add" to Icons.Filled.Add,
@@ -62,16 +74,20 @@ fun MyDropDownMenu(modifier: Modifier = Modifier) {
         "Location" to Icons.Filled.LocationOn
     )
 
-    // UI for dropdown menu
     Column(modifier = modifier) {
         OutlinedTextField(
             value = selectedText,
-            onValueChange = { selectedText = it },
+            onValueChange = {},
             enabled = false,
             readOnly = true,
-            modifier = Modifier
-                .clickable { expanded = true }
-                .fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth(),
+            leadingIcon = {
+                Icon(
+                    imageVector = iconsMap[selectedText] ?: Icons.Filled.Add,
+                    contentDescription = "Selected Icon",
+                    tint = Color.Blue
+                )
+            },
             colors = TextFieldDefaults.outlinedTextFieldColors(
                 focusedBorderColor = Color.Blue,
                 unfocusedBorderColor = Color.Gray,
@@ -79,50 +95,35 @@ fun MyDropDownMenu(modifier: Modifier = Modifier) {
                 focusedLabelColor = Color.Blue,
                 unfocusedLabelColor = Color.Yellow,
                 disabledLabelColor = Color.LightGray,
-                cursorColor = Color.Black,
+                cursorColor = Color.Black
             )
         )
 
         DropdownMenu(
             expanded = expanded,
             onDismissRequest = { expanded = false },
-            modifier = Modifier
-                .fillMaxWidth()
-                .border(1.dp, Color.Black, RoundedCornerShape(4.dp))
+            modifier = Modifier.fillMaxWidth()
         ) {
-            iconsMap.forEach { (name, _) ->
+            iconsMap.forEach { (name, icon) ->
                 DropdownMenuItem(
                     text = { Text(text = name) },
                     onClick = {
-                        selectedText = name // update selected text but not the icon immediately
+                        selectedText = name
+                        onIconSelected(name)  // Llama la función para actualizar el ícono seleccionado
                         expanded = false
                     }
                 )
             }
         }
-    }
 
-    // Button to confirm the selection
-    Button(
-        onClick = {
-            // Update the icon when the button is clicked
-            // The icon will only update when the button is pressed
-        },
-        modifier = Modifier.fillMaxWidth().padding(top = 16.dp)
-    ) {
-        Text("Enviar")
-    }
-
-    // Display the icon based on the selectedText only when the button is pressed
-    selectedText?.let {
-        Icon(
-            imageVector = iconsMap[it] ?: Icons.Default.Add,
-            contentDescription = "Selected Icon",
-            modifier = Modifier
-                .size(100.dp)
-                .padding(bottom = 16.dp),
-            tint = Color.Blue
-        )
+        // Botón para abrir el menú desplegable
+        IconButton(onClick = { expanded = !expanded }) {
+            Icon(
+                imageVector = Icons.Filled.ArrowDropDown,
+                contentDescription = "Dropdown Arrow",
+                tint = Color.Blue
+            )
+        }
     }
 }
 
@@ -149,17 +150,86 @@ fun RatingSlider() {
     }
 }
 
+@Composable
+fun BottomSection(selectedIcon: String) {
+    var sliderPosition by remember { mutableStateOf(5f) }
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp)
+            .padding(bottom = 16.dp)
+    ) {
+        Divider(
+            color = Color.Gray,
+            thickness = 1.dp,
+            modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
+        )
+
+        Button(
+            onClick = {
+                // No es necesario cambiar nada aquí por ahora
+            },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Enviar")
+        }
+
+        Spacer(modifier = Modifier.height(8.dp)) // Espaciado entre el botón y el ícono
+        MyBadgeIconWithNumber(selectedText = selectedIcon) // Muestra el ícono seleccionado
+    }
+}
+
+@Composable
+fun MyBadgeIconWithNumber(selectedText: String) {
+    val iconsMap = mapOf(
+        "Add" to Icons.Filled.Add,
+        "Call" to Icons.Filled.Call,
+        "Email" to Icons.Filled.Email,
+        "Home" to Icons.Filled.Home,
+        "Settings" to Icons.Filled.Settings,
+        "Search" to Icons.Filled.Search,
+        "Favorite" to Icons.Filled.Favorite,
+        "Location" to Icons.Filled.LocationOn
+    )
+
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier = Modifier.size(100.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .size(100.dp)
+                .padding(16.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = iconsMap[selectedText] ?: Icons.Filled.Add,
+                contentDescription = "Selected Icon",
+                modifier = Modifier.size(50.dp),
+                tint = Color.Blue
+            )
+        }
+    }
+}
+
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
 fun GreetingPreview() {
     AndroidStudioKoalaTemplateTheme {
         Column(modifier = Modifier.fillMaxSize()) {
-            // Content section at the top
             Title()
             Spacer(modifier = Modifier.height(8.dp))
-            MyDropDownMenu(modifier = Modifier.padding(horizontal = 16.dp))
+
+            // Llama a MyDropDownMenu pasando la función que actualiza el ícono seleccionado
+            MyDropDownMenu(modifier = Modifier.padding(horizontal = 16.dp), onIconSelected = {})
+
             Spacer(modifier = Modifier.height(32.dp))
             RatingSlider()
+
+            Spacer(modifier = Modifier.weight(1f)) // Empujar la parte inferior hacia abajo
+
+            BottomSection(selectedIcon = "Add")
         }
     }
 }
