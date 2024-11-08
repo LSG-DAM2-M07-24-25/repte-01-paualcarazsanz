@@ -21,26 +21,39 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             AndroidStudioKoalaTemplateTheme {
-                var selectedIcon by remember { mutableStateOf("Add") } // Estado para almacenar el ícono seleccionado
+                // Definir estado para el slider, el ícono y el número del badge
+                var selectedIcon by remember { mutableStateOf("Add") }
+                var badgeNumber by remember { mutableStateOf(0) }
+                var sliderPosition by remember { mutableStateOf(5f) }
+
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                     Column(modifier = Modifier.padding(innerPadding)) {
                         // Parte superior: Título, Dropdown y Slider
                         Title()
                         Spacer(modifier = Modifier.height(8.dp))
 
-                        // Pasamos la función onIconSelected que actualiza el estado de selectedIcon
                         MyDropDownMenu(modifier = Modifier.padding(horizontal = 16.dp), onIconSelected = { icon ->
-                            selectedIcon = icon
+                            selectedIcon = icon // Actualiza el ícono seleccionado
                         })
 
                         Spacer(modifier = Modifier.height(32.dp))
-                        RatingSlider()
+
+                        // Slider para controlar el número
+                        RatingSlider(sliderPosition = sliderPosition, onSliderValueChange = { newValue ->
+                            sliderPosition = newValue // Actualiza el valor del slider
+                        })
 
                         // Espacio para empujar la parte inferior hacia abajo
                         Spacer(modifier = Modifier.weight(1f))
 
                         // Parte inferior: Botón y Badge Icon
-                        BottomSection(selectedIcon = selectedIcon)
+                        BottomSection(
+                            selectedIcon = selectedIcon,
+                            badgeNumber = badgeNumber,
+                            onSendClick = {
+                                badgeNumber = sliderPosition.toInt() // Solo actualiza el número cuando se hace clic en "Enviar"
+                            }
+                        )
                     }
                 }
             }
@@ -61,7 +74,7 @@ fun Title() {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MyDropDownMenu(modifier: Modifier = Modifier, onIconSelected: (String) -> Unit) {
-    var selectedText: String by remember { mutableStateOf("Add") } // Inicializa con un valor predeterminado
+    var selectedText: String by remember { mutableStateOf("Add") }
     var expanded: Boolean by remember { mutableStateOf(false) }
     val iconsMap = mapOf(
         "Add" to Icons.Filled.Add,
@@ -109,7 +122,7 @@ fun MyDropDownMenu(modifier: Modifier = Modifier, onIconSelected: (String) -> Un
                     text = { Text(text = name) },
                     onClick = {
                         selectedText = name
-                        onIconSelected(name)  // Llama la función para actualizar el ícono seleccionado
+                        onIconSelected(name) // Actualiza el ícono seleccionado
                         expanded = false
                     }
                 )
@@ -128,9 +141,7 @@ fun MyDropDownMenu(modifier: Modifier = Modifier, onIconSelected: (String) -> Un
 }
 
 @Composable
-fun RatingSlider() {
-    var sliderPosition by remember { mutableStateOf(5f) }
-
+fun RatingSlider(sliderPosition: Float, onSliderValueChange: (Float) -> Unit) {
     Column(modifier = Modifier.padding(horizontal = 16.dp)) {
         Text(
             text = "${sliderPosition.toInt()}",
@@ -141,7 +152,7 @@ fun RatingSlider() {
 
         Slider(
             value = sliderPosition,
-            onValueChange = { sliderPosition = it },
+            onValueChange = { onSliderValueChange(it) },
             valueRange = 1f..10f,
             steps = 9,
             onValueChangeFinished = { },
@@ -151,9 +162,11 @@ fun RatingSlider() {
 }
 
 @Composable
-fun BottomSection(selectedIcon: String) {
-    var sliderPosition by remember { mutableStateOf(5f) }
-
+fun BottomSection(
+    selectedIcon: String,
+    badgeNumber: Int,
+    onSendClick: () -> Unit
+) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -166,9 +179,10 @@ fun BottomSection(selectedIcon: String) {
             modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
         )
 
+        // Botón para enviar
         Button(
             onClick = {
-                // No es necesario cambiar nada aquí por ahora
+                onSendClick() // Actualiza el número solo cuando se hace clic en "Enviar"
             },
             modifier = Modifier.fillMaxWidth()
         ) {
@@ -176,12 +190,12 @@ fun BottomSection(selectedIcon: String) {
         }
 
         Spacer(modifier = Modifier.height(8.dp)) // Espaciado entre el botón y el ícono
-        MyBadgeIconWithNumber(selectedText = selectedIcon) // Muestra el ícono seleccionado
+        MyBadgeIconWithNumber(selectedText = selectedIcon, number = badgeNumber) // Muestra el ícono con el número
     }
 }
 
 @Composable
-fun MyBadgeIconWithNumber(selectedText: String) {
+fun MyBadgeIconWithNumber(selectedText: String, number: Int) {
     val iconsMap = mapOf(
         "Add" to Icons.Filled.Add,
         "Call" to Icons.Filled.Call,
@@ -210,6 +224,22 @@ fun MyBadgeIconWithNumber(selectedText: String) {
                 tint = Color.Blue
             )
         }
+
+        // Mostrar el número como un badge
+        if (number > 0) {
+            Box(
+                contentAlignment = Alignment.TopEnd,
+                modifier = Modifier
+                    .size(30.dp)
+                    .align(Alignment.TopEnd)
+            ) {
+                Text(
+                    text = number.toString(),
+                    style = MaterialTheme.typography.bodySmall.copy(color = Color.White),
+                    modifier = Modifier.align(Alignment.Center)
+                )
+            }
+        }
     }
 }
 
@@ -221,15 +251,14 @@ fun GreetingPreview() {
             Title()
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Llama a MyDropDownMenu pasando la función que actualiza el ícono seleccionado
             MyDropDownMenu(modifier = Modifier.padding(horizontal = 16.dp), onIconSelected = {})
 
             Spacer(modifier = Modifier.height(32.dp))
-            RatingSlider()
+            RatingSlider(sliderPosition = 5f, onSliderValueChange = {})
 
             Spacer(modifier = Modifier.weight(1f)) // Empujar la parte inferior hacia abajo
 
-            BottomSection(selectedIcon = "Add")
+            BottomSection(selectedIcon = "Add", badgeNumber = 0, onSendClick = {})
         }
     }
 }
